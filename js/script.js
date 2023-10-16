@@ -50,9 +50,9 @@ const displayPopularMovies = async () =>{
             </div>`
         movieGrid.appendChild(div);
     })
-
 }
 
+//Display the popular TV Shows on the listing page
 const displayTVShows = async () =>{
     const { results: popShows } = await fetchAPIData('tv/popular');
     const showGrid = document.querySelector('#popular-shows');
@@ -78,7 +78,62 @@ const displayTVShows = async () =>{
         </div>`
         showGrid.appendChild(div);
     })
+}
 
+//Display the movie details on its movie page
+const displayMovieDetails = async () =>{
+    const movieId = window.location.search.split('=')[1];
+    const response = await fetchAPIData(`movie/${movieId}`);
+    const div = document.createElement('div');
+
+    div.innerHTML =
+    `<div class="details-top">
+          <div>
+            <img
+              src="${response.poster_path ? `https://image.tmdb.org/t/p/w500${response.poster_path}` : '../images/no-image.jpg'}"
+              class="card-img-top"
+              alt='${response.original_title}'
+            />
+          </div>
+          <div>
+            <h2>${response.original_title}</h2>
+            <p>
+              <i class="fas fa-star text-primary"></i>
+              ${Math.ceil(response.vote_average)} / 10
+            </p>
+            <p class="text-muted">Release Date: ${response.release_date}</p>
+            <p>${response.overview}</p>
+            <h5>Genres</h5>
+            <ul class="list-group">
+              ${                
+                response.genres.map((genre) =>{
+                    const li = `<li>${genre.name}</li>`;
+                    return li;
+                }).join('')
+              }
+            </ul>
+            <a href='${response.homepage}' target="_blank" class="btn">Visit Movie Homepage</a>
+          </div>
+        </div>
+        <div class="details-bottom">
+          <h2>Movie Info</h2>
+          <ul>
+            <li><span class="text-secondary">Budget:</span> $${response.budget.toLocaleString('en-US')}</li>
+            <li><span class="text-secondary">Revenue:</span> $${response.revenue.toLocaleString('en-US')}</li>
+            <li><span class="text-secondary">Runtime:</span> ${response.runtime} minutes</li>
+            <li><span class="text-secondary">Status:</span> ${response.status}</li>
+          </ul>
+          <h4>Production Companies</h4>
+          <div class="list-group">
+              ${
+                response.production_companies.map((pc) =>{
+                    return `${pc.name}`
+                }).join(', ')
+              }
+          </div>
+        </div>`;
+
+        document.querySelector('#movie-details').appendChild(div);
 }
 
 //Highlight the active links
@@ -99,7 +154,7 @@ const init = () =>{
             displayPopularMovies();
             break;
         case '/movie-details.html':
-            console.log('Movie Details');
+            displayMovieDetails();
             break;
         case '/search.html':
             console.log('Search Page');

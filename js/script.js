@@ -84,6 +84,10 @@ const displayTVShows = async () =>{
 const displayMovieDetails = async () =>{
     const movieId = window.location.search.split('=')[1];
     const response = await fetchAPIData(`movie/${movieId}`);
+
+    //Backdrop using the background image
+    displayBackdrop('movie', response.backdrop_path);
+
     const div = document.createElement('div');
 
     div.innerHTML =
@@ -136,6 +140,62 @@ const displayMovieDetails = async () =>{
         document.querySelector('#movie-details').appendChild(div);
 }
 
+//Display the Show details on the Show Details Page
+const displayShowDetails = async () =>{
+    const showId = window.location.search.split('=')[1];
+    const response = await fetchAPIData(`tv/${showId}`);
+
+    displayBackdrop('show', response.backdrop_path);
+
+    const div = document.createElement('div');
+    div.innerHTML =
+    `<div class="details-top">
+          <div>
+            <img
+              src="${response.poster_path ? `https://image.tmdb.org/t/p/w500${response.poster_path}` : '../images/no-image.jpg'}"
+              class="card-img-top"
+              alt='${response.original_title}'
+            />
+          </div>
+          <div>
+            <h2>${response.name}</h2>
+            <p>
+              <i class="fas fa-star text-primary"></i>
+              ${Math.ceil(response.vote_average)} / 10
+            </p>
+            <p class="text-muted">Release Date: ${response.first_air_date}</p>
+            <p>${response.overview}</p>
+            <h5>Genres</h5>
+            <ul class="list-group">
+                ${response.genres.map(({name}) =>{
+                    return `<li>${name}</li>`
+                }).join('')}
+            </ul>
+            <a href="${response.homepage}" target="_blank" class="btn">Visit Show Homepage</a>
+          </div>
+        </div>
+        <div class="details-bottom">
+          <h2>Show Info</h2>
+          <ul>
+            <li><span class="text-secondary">Number Of Episodes:</span> ${response.number_of_episodes}</li>
+            <li>
+              <span class="text-secondary">Last Episode To Air:</span> ${response.last_episode_to_air.air_date}
+            </li>
+            <li><span class="text-secondary">Status:</span> ${response.status}</li>
+          </ul>
+          <h4>Production Companies</h4>
+          <div class="list-group">
+                ${
+                    response.production_companies.map(({name}) =>{
+                        return name;
+                    }).join(', ')
+                }
+          </div>
+        </div>
+    `;
+    document.querySelector('#show-details').appendChild(div);
+}
+
 //Highlight the active links
 const highlightLinks = () =>{
     linksList = document.querySelectorAll('.nav-link');
@@ -144,6 +204,28 @@ const highlightLinks = () =>{
             li.classList.add('active');
         }
     })
+}
+
+//Display the backdrop image on the Movie / TV Show pages
+const displayBackdrop = (mediaType, pathURL) =>{
+    const overlayDiv = document.createElement('div');
+    overlayDiv.style.backgroundImage = `url(https://image.tmdb.org/t/p/original${pathURL})`;
+    overlayDiv.style.backgroundPosition = 'center';
+    overlayDiv.style.backgroundRepeat = 'no-repeat';
+    overlayDiv.style.height = '100vh';
+    overlayDiv.style.width = '100vw';
+    overlayDiv.style.position = 'absolute';
+    overlayDiv.style.top = '0';
+    overlayDiv.style.left = '0';
+    overlayDiv.style.zIndex = '-1';
+    overlayDiv.style.opacity = '0.1';
+
+    if(mediaType == 'movie'){
+        document.getElementById('movie-details').appendChild(overlayDiv);
+    }
+    else{
+        document.getElementById('show-details').appendChild(overlayDiv);    
+    }
 }
 
 //Simple router for the web application
@@ -163,7 +245,7 @@ const init = () =>{
             displayTVShows();
             break;
         case '/tv-details.html':
-            console.log('TV Details');
+            displayShowDetails();
             break;
     }
 

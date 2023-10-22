@@ -1,5 +1,12 @@
 const globalState = {
-    currentPage: window.location.pathname
+    currentPage: window.location.pathname,
+    search: {
+        mediaType: '',
+        keywords: '',
+        page: 1,
+        totalPages: 1,
+        totalResults: 0
+    }
 };
 
 //General Fetch for TMDB data
@@ -15,6 +22,18 @@ const fetchAPIData = async (endpoint) =>{
     return data;
 }
 
+const fetchSearchResults = async () =>{
+    const API_KEY = 'f3ab67acf3923abec3aca78fa84b47c8';
+    const API_URL = 'https://api.themoviedb.org/3/';
+
+    showSpinner();
+    const res = await fetch(`${API_URL}search/${globalState.search.mediaType}?api_key=${API_KEY}&query=${globalState.search.keywords}&page=${globalState.search.page}&language=en-US`);
+    const data = await res.json();
+    hideSpinner();
+
+    return data;
+}
+
 const showSpinner = () =>{
     const spinner = document.querySelector('.spinner');
     spinner.classList.add('show');
@@ -23,6 +42,103 @@ const showSpinner = () =>{
 const hideSpinner = () =>{
     const spinner = document.querySelector('.spinner');
     spinner.classList.remove('show');
+}
+
+const search = async () =>{
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    globalState.search.mediaType = urlParams.get('type');
+    globalState.search.keywords = urlParams.get('search-term');
+
+    if(globalState.search.keywords != '' && globalState.search.keywords != null){
+        const {results, total_pages: totalPages, page, total_results} = await fetchSearchResults();
+        
+        globalState.search.page = page;
+        globalState.search.totalPages = totalPages;
+        globalState.search.totalResults = total_results;
+
+        //Clear the previous page
+        document.querySelector('#search-results').innerHTML = '';
+        document.querySelector('#search-results-heading').innerHTML = '';
+        document.querySelector('#pagination').innerHTML = '';
+        
+        const resultsHeading = document.querySelector('#search-results-heading');
+        const h2 = document.createElement('h2');
+        h2.innerHTML = `${results.length * globalState.search.page} of ${ globalState.search.totalResults} for search: ${globalState.search.keywords}`;
+        resultsHeading.appendChild(h2);
+
+        if(results.length == 0){
+            showSearchAlert('There are no results matching this search', 'alert-error');
+        }
+        else{
+            results.forEach((el) =>{
+                const div = document.createElement('div');
+                div.classList.add('card');
+                div.innerHTML = 
+                `<div class="card">
+                    <a href="${globalState.search.mediaType}-details.html?id=${el.id}">
+                        <img
+                            src="${el.poster_path ? `https://image.tmdb.org/t/p/w500${el.poster_path}` : '../images/no-image.jpg'}"
+                            class="card-img-top"
+                            alt='${globalState.search.mediaType == 'movie' ? el.title : el.name}'
+                        />
+                    </a>
+                    <div class="card-body">
+                        <h5 class="card-title">${globalState.search.mediaType == 'movie' ? el.title : el.name}</h5>
+                        <p class="card-text">
+                        <small class="text-muted">Release: ${globalState.search.mediaType == 'movie' ? el.release_date : el.first_air_date}</small>
+                        </p>
+                    </div>
+                </div>`
+                document.getElementById('search-results').appendChild(div);
+            })
+        }
+    }
+    else{
+        showSearchAlert('Please enter a search before submitting', 'alert-error');
+    }
+
+    //Create the pagination
+    const div = document.createElement('div');
+    div.classList.add('pagination');
+    div.innerHTML = 
+        ` <button class="btn btn-primary" id="prev">Prev</button>
+          <button class="btn btn-primary" id="next">Next</button>
+          <div class="page-counter">Page ${globalState.search.page} of ${globalState.search.totalPages}</div>
+        `
+    document.querySelector('#pagination').appendChild(div);
+
+    //Check if first or last page to disbale Prev / Next buttons
+    if(globalState.search.page == 1){
+        document.querySelector('#prev').disabled = true;
+    }
+    if(globalState.search.page == globalState.search.totalPages){
+        document.querySelector('#next').disabled = true;
+    }
+
+    //Functionality for moving Next / Prev
+    document.querySelector('#next').addEventListener('click', async () =>{
+        globalState.search.page++;
+        await search();
+    })
+
+    document.querySelector('#prev').addEventListener('click', async () =>{
+        globalState.search.page--;
+        await search();
+    })
+
+}
+
+//Show alert when submitting search results
+const showSearchAlert = (message, className) =>{
+    const alertDiv = document.createElement('div');
+    alertDiv.classList.add('alert', className);
+    alertDiv.appendChild(document.createTextNode(message));
+    document.querySelector('#alert').appendChild(alertDiv);
+
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
 }
 
 //Display the popular movies on the homepage
@@ -292,7 +408,7 @@ const init = () =>{
             displayMovieDetails();
             break;
         case '/search.html':
-            console.log('Search Page');
+            search();
             break;
         case '/shows.html':
             displayTVShows();
@@ -304,7 +420,6 @@ const init = () =>{
 
     highlightLinks();
 }
-
 
 
 document.addEventListener('DOMContentLoaded', init);

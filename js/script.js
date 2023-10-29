@@ -413,6 +413,9 @@ const init = () =>{
         case '/shows.html':
             displayTVShows();
             break;
+        case '/shows':
+            displayTVShows();
+            break;    
         case '/tv-details.html':
             displayShowDetails();
             break;
